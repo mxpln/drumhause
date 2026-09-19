@@ -23,6 +23,7 @@ import type {
   InstrumentData,
   InstrumentParams,
 } from "@/features/instrument/types/instrument";
+import { DEFAULT_INSTRUMENT_EFFECTS } from "@/features/instrument/types/instrument";
 import { useMasterChainStore } from "@/features/master-bus/store/use-master-chain-store";
 import { getDefaultPresets } from "@/features/preset/lib/constants";
 import { usePresetMetaStore } from "@/features/preset/store/use-preset-meta-store";
@@ -45,6 +46,7 @@ function paramsFromChannel(
     volume: dbFromDocument(channel.volumeDb),
     pan: channel.pan,
     tune: channel.tuneSemitones,
+    effects: channel.effects ?? DEFAULT_INSTRUMENT_EFFECTS,
     solo: channel.solo,
     mute: channel.mute,
   };

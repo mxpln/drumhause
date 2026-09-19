@@ -10,9 +10,15 @@
 
 import {
   AmplitudeEnvelope,
+  Compressor,
+  Delay,
+  Distortion,
   Filter,
+  Gain,
   now,
   Panner,
+  Phaser,
+  Reverb,
   Sampler,
   type ToneAudioNode,
 } from "tone/build/esm/index";
@@ -29,12 +35,16 @@ import {
   ENVELOPE_DEFAULT_SUSTAIN,
   INSTRUMENT_FILTER_RANGE,
   SAMPLER_ROOT_NOTE,
+  MASTER_COMP_LATENCY,
 } from "./constants";
 import {
   applySplitFilterWithRamp,
   createSplitFilterNode,
 } from "./fx/split-filter";
-import type { ContinuousRuntimeParams } from "./instrument/types";
+import type {
+  ContinuousRuntimeParams,
+  TrackFxRuntimeParams,
+} from "./instrument/types";
 import type { MasterBus } from "./master-bus";
 import {
   getEnvelopeInternalSignal,
@@ -49,6 +59,18 @@ interface InstrumentChannelNodes {
   lowPassFilterNode: Filter;
   highPassFilterNode: Filter;
   pannerNode: Panner;
+  compressorNode: Compressor;
+  compressorMakeupNode: Gain<"decibels">;
+  compressorWetNode: Gain;
+  compressorBypassNode: Gain;
+  compressorDryDelayNode: Delay;
+  compressorDryNode: Gain;
+  saturationNode: Distortion;
+  phaserNode: Phaser;
+  phaserWetNode: Gain;
+  reverbNode: Reverb;
+  reverbWetNode: Gain;
+  outputNode: Gain;
 }
 
 /**
@@ -76,6 +98,18 @@ class InstrumentChannel {
   private lowPassFilterNode: Filter;
   private highPassFilterNode: Filter;
   private pannerNode: Panner;
+  private compressorNode: Compressor;
+  private compressorMakeupNode: Gain<"decibels">;
+  private compressorWetNode: Gain;
+  private compressorBypassNode: Gain;
+  private compressorDryDelayNode: Delay;
+  private compressorDryNode: Gain;
+  private saturationNode: Distortion;
+  private phaserNode: Phaser;
+  private phaserWetNode: Gain;
+  private reverbNode: Reverb;
+  private reverbWetNode: Gain;
+  private outputNode: Gain;
 
   private constructor(instrumentId: string, nodes: InstrumentChannelNodes) {
     this.instrumentId = instrumentId;
@@ -84,6 +118,18 @@ class InstrumentChannel {
     this.lowPassFilterNode = nodes.lowPassFilterNode;
     this.highPassFilterNode = nodes.highPassFilterNode;
     this.pannerNode = nodes.pannerNode;
+    this.compressorNode = nodes.compressorNode;
+    this.compressorMakeupNode = nodes.compressorMakeupNode;
+    this.compressorWetNode = nodes.compressorWetNode;
+    this.compressorBypassNode = nodes.compressorBypassNode;
+    this.compressorDryDelayNode = nodes.compressorDryDelayNode;
+    this.compressorDryNode = nodes.compressorDryNode;
+    this.saturationNode = nodes.saturationNode;
+    this.phaserNode = nodes.phaserNode;
+    this.phaserWetNode = nodes.phaserWetNode;
+    this.reverbNode = nodes.reverbNode;
+    this.reverbWetNode = nodes.reverbWetNode;
+    this.outputNode = nodes.outputNode;
   }
 
   /**
@@ -115,8 +161,33 @@ class InstrumentChannel {
 
     // Stereo panner for instrument positioning
     const pannerNode = new Panner(0);
+    const compressorNode = new Compressor({
+      threshold: 0,
+      ratio: 5,
+      attack: 0.02575,
+      release: 0.05,
+      knee: 0,
+    });
+    const compressorMakeupNode = new Gain(1.5, "decibels");
+    const compressorWetNode = new Gain(0);
+    const compressorBypassNode = new Gain(1);
+    const compressorDryDelayNode = new Delay(MASTER_COMP_LATENCY);
+    const compressorDryNode = new Gain(0);
+    const saturationNode = new Distortion({ distortion: 0, wet: 0 });
+    const phaserNode = new Phaser({
+      frequency: 0.5,
+      octaves: 2,
+      baseFrequency: 1500,
+      Q: 0.5,
+      wet: 1,
+    });
+    const phaserWetNode = new Gain(0);
+    const reverbNode = new Reverb({ decay: 0.1, wet: 1 });
+    const reverbWetNode = new Gain(0);
+    const outputNode = new Gain(1);
 
     try {
+      await reverbNode.generate();
       const { url, baseUrl } = await resolveSamplerSource(
         samplePath,
         resolveSampleSource,
@@ -129,6 +200,18 @@ class InstrumentChannel {
         lowPassFilterNode,
         highPassFilterNode,
         pannerNode,
+        compressorNode,
+        compressorMakeupNode,
+        compressorWetNode,
+        compressorBypassNode,
+        compressorDryDelayNode,
+        compressorDryNode,
+        saturationNode,
+        phaserNode,
+        phaserWetNode,
+        reverbNode,
+        reverbWetNode,
+        outputNode,
       });
     } catch (error) {
       // Sampler resolution/creation failed: dispose the nodes built above
@@ -138,6 +221,18 @@ class InstrumentChannel {
       highPassFilterNode.dispose();
       envelopeNode.dispose();
       pannerNode.dispose();
+      compressorNode.dispose();
+      compressorMakeupNode.dispose();
+      compressorWetNode.dispose();
+      compressorBypassNode.dispose();
+      compressorDryDelayNode.dispose();
+      compressorDryNode.dispose();
+      saturationNode.dispose();
+      phaserNode.dispose();
+      phaserWetNode.dispose();
+      reverbNode.dispose();
+      reverbWetNode.dispose();
+      outputNode.dispose();
       throw error;
     }
   }
@@ -150,16 +245,16 @@ class InstrumentChannel {
   }
 
   /**
-   * The channel's output node (the panner).
+   * The channel's post-FX output node.
    * Used for master bus connection and external taps (e.g. gain meters).
    */
   get output(): ToneAudioNode {
-    return this.pannerNode;
+    return this.outputNode;
   }
 
   /**
    * Chains internal nodes in signal flow order
-   * (Sampler -> Envelope -> Filters -> Panner)
+   * (Sampler -> Envelope -> Filters -> Panner -> Track FX)
    * and connects the output to the master bus's parallel compression input.
    */
   connectToMasterBus(bus: MasterBus): void {
@@ -187,6 +282,21 @@ class InstrumentChannel {
       this.highPassFilterNode,
       this.pannerNode,
     );
+    this.pannerNode.connect(this.compressorNode);
+    this.compressorNode.chain(
+      this.compressorMakeupNode,
+      this.compressorWetNode,
+      this.saturationNode,
+    );
+    this.pannerNode.chain(this.compressorBypassNode, this.saturationNode);
+    this.pannerNode.chain(
+      this.compressorDryDelayNode,
+      this.compressorDryNode,
+      this.saturationNode,
+    );
+    this.saturationNode.connect(this.outputNode);
+    this.pannerNode.chain(this.phaserNode, this.phaserWetNode, this.outputNode);
+    this.pannerNode.chain(this.reverbNode, this.reverbWetNode, this.outputNode);
   }
 
   /**
@@ -209,6 +319,20 @@ class InstrumentChannel {
 
     this.pannerNode.pan.value = params.pan;
     this.samplerNode.volume.value = params.volume;
+  }
+
+  applyTrackFxParams(params: TrackFxRuntimeParams): void {
+    this.compressorNode.threshold.value = params.compThreshold;
+    this.compressorNode.ratio.value = params.compRatio;
+    this.compressorNode.attack.value = params.compAttack;
+    this.compressorWetNode.gain.value = params.compMix;
+    this.compressorBypassNode.gain.value = params.compMix === 0 ? 1 : 0;
+    this.compressorDryNode.gain.value = 1 - params.compMix;
+    this.saturationNode.distortion = params.saturationAmount;
+    this.saturationNode.wet.value = params.saturationWet;
+    this.phaserWetNode.gain.value = params.phaserWet;
+    this.reverbWetNode.gain.value = params.reverbWet;
+    this.reverbNode.decay = params.reverbDecay;
   }
 
   /**
@@ -308,6 +432,18 @@ class InstrumentChannel {
     this.lowPassFilterNode.dispose();
     this.highPassFilterNode.dispose();
     this.pannerNode.dispose();
+    this.compressorNode.dispose();
+    this.compressorMakeupNode.dispose();
+    this.compressorWetNode.dispose();
+    this.compressorBypassNode.dispose();
+    this.compressorDryDelayNode.dispose();
+    this.compressorDryNode.dispose();
+    this.saturationNode.dispose();
+    this.phaserNode.dispose();
+    this.phaserWetNode.dispose();
+    this.reverbNode.dispose();
+    this.reverbWetNode.dispose();
+    this.outputNode.dispose();
   }
 }
 

@@ -23,9 +23,13 @@ import {
 import type {
   ChannelPlayParams,
   ContinuousRuntimeParams,
+  TrackFxRuntimeParams,
 } from "@/core/audio/engine/instrument/types";
 import type { MasterChainSettings } from "@/core/audio/engine/master-bus";
-import type { InstrumentParams } from "@/features/instrument/types/instrument";
+import {
+  DEFAULT_INSTRUMENT_EFFECTS,
+  type InstrumentParams,
+} from "@/features/instrument/types/instrument";
 import { lerp } from "@/shared/lib/utils";
 
 /**
@@ -100,6 +104,29 @@ function instrumentContinuousParams(
   };
 }
 
+function instrumentTrackFxParams(params: InstrumentParams): TrackFxRuntimeParams {
+  const effects = params.effects ?? DEFAULT_INSTRUMENT_EFFECTS;
+  return {
+    saturationWet: effects.saturation,
+    saturationAmount: lerp(
+      effects.saturation,
+      MASTER_SATURATION_AMOUNT_RANGE[0],
+      MASTER_SATURATION_AMOUNT_RANGE[1],
+    ),
+    phaserWet: effects.phaser,
+    reverbWet: effects.reverb,
+    reverbDecay: lerp(
+      effects.reverb,
+      MASTER_REVERB_DECAY_RANGE[0],
+      MASTER_REVERB_DECAY_RANGE[1],
+    ),
+    compThreshold: effects.compThreshold,
+    compRatio: effects.compRatio,
+    compAttack: effects.compAttack,
+    compMix: effects.compMix,
+  };
+}
+
 /**
  * An instrument's per-note canonical params (tune, decay) plus flags
  * (mute, solo). Only pitch is derived: the semitone offset becomes the
@@ -116,6 +143,7 @@ function instrumentPlayParams(params: InstrumentParams): ChannelPlayParams {
 
 export {
   instrumentContinuousParams,
+  instrumentTrackFxParams,
   instrumentPlayParams,
   mapMasterToSettings,
 };

@@ -275,7 +275,7 @@ describe("v2 entry migration on hydrate", () => {
 
     // Migrated to the current version, not quarantined.
     expect(listed).toHaveLength(1);
-    expect(listed[0].version).toBe(2.1);
+    expect(listed[0].version).toBe(2.2);
     expect(listed[0].meta.id).toBe("v2-preset");
     expect(listed[0].master.filter).toEqual(
       frozenSplitFilterPositionToCanonical(V2_MASTER_FILTER_POSITION),

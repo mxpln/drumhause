@@ -1,6 +1,7 @@
 import { Pattern } from "@/core/audio/engine/pattern-types";
 import { init } from "@/core/dh";
 import { getKitLoader } from "@/core/dhkit";
+import { DEFAULT_INSTRUMENT_EFFECTS } from "@/features/instrument/types/instrument";
 import {
   CorruptFieldError,
   InvalidFileError,
@@ -32,7 +33,7 @@ import {
  * with UnsupportedVersionError (#373). No legacy share decode remains.
  *
  * Shape:
- * - `v: 3` (see COMPACT_CODEC_VERSION below), dispatched on by urlToDocument.
+ * - `v: 4` (see COMPACT_CODEC_VERSION below), dispatched on by urlToDocument.
  * - `k` is the STABLE kit id string ("kit-0"), not a positional index into
  *   KIT_ORDER (decision 12): inserting or reordering registry kits can never
  *   repoint an existing link.
@@ -64,7 +65,7 @@ import {
  * old ambiguity can never resurface. No non-latest link was ever released, so
  * nothing in the wild breaks.
  */
-const COMPACT_CODEC_VERSION = 3;
+const COMPACT_CODEC_VERSION = 4;
 
 const CHANNEL_COUNT = 8;
 
@@ -145,6 +146,7 @@ type CompactChannel = {
   v?: number | null; // volumeDb (null = silence)
   p?: number; // pan -1..1
   t?: number; // tuneSemitones -7..7
+  x?: [number, number, number, number, number, number, number];
   s?: number; // solo (1)
   m?: number; // mute (1)
 };
@@ -163,7 +165,7 @@ type CompactMaster = {
 };
 
 type CompactPreset = {
-  v: 3;
+  v: 4;
   id: string; // preset UUID (minted fresh when sharing)
   n: string; // preset name
   k: string; // STABLE kit id, e.g. "kit-0" (decision 12)
@@ -231,6 +233,8 @@ function sparseNullable(
 
 function encodeChannel(channel: Channel, defaults: Channel): CompactChannel {
   const compact: CompactChannel = {};
+  const effects = channel.effects ?? DEFAULT_INSTRUMENT_EFFECTS;
+  const defaultEffects = defaults.effects ?? DEFAULT_INSTRUMENT_EFFECTS;
 
   const d = sparse(
     channel.decaySeconds,
@@ -255,6 +259,25 @@ function encodeChannel(channel: Channel, defaults: Channel): CompactChannel {
   if (v !== undefined) compact.v = v;
   if (p !== undefined) compact.p = p;
   if (t !== undefined) compact.t = t;
+  if (
+    effects.saturation !== defaultEffects.saturation ||
+    effects.phaser !== defaultEffects.phaser ||
+    effects.reverb !== defaultEffects.reverb ||
+    effects.compThreshold !== defaultEffects.compThreshold ||
+    effects.compRatio !== defaultEffects.compRatio ||
+    effects.compAttack !== defaultEffects.compAttack ||
+    effects.compMix !== defaultEffects.compMix
+  ) {
+    compact.x = [
+      effects.saturation,
+      effects.phaser,
+      effects.reverb,
+      effects.compThreshold,
+      effects.compRatio,
+      effects.compAttack,
+      effects.compMix,
+    ];
+  }
   if (channel.solo !== defaults.solo) compact.s = channel.solo ? 1 : 0;
   if (channel.mute !== defaults.mute) compact.m = channel.mute ? 1 : 0;
 
@@ -429,6 +452,18 @@ function validateChannels(value: unknown): asserts value is CompactChannel[] {
     if (!isRecord(channel)) {
       corrupt(`ip.${index}`, "expected a channel params object");
     }
+    if (channel.x !== undefined) {
+      if (
+        !Array.isArray(channel.x) ||
+        channel.x.length !== 7 ||
+        channel.x.some((value) => typeof value !== "number")
+      ) {
+        corrupt(
+          `ip.${index}.x`,
+          "expected seven numeric per-track FX parameters",
+        );
+      }
+    }
   });
 }
 
@@ -481,6 +516,18 @@ function decodeChannel(
     volumeDb: compact.v !== undefined ? compact.v : defaults.volumeDb,
     pan: compact.p ?? defaults.pan,
     tuneSemitones: compact.t ?? defaults.tuneSemitones,
+    effects:
+      compact.x === undefined
+        ? (defaults.effects ?? DEFAULT_INSTRUMENT_EFFECTS)
+        : {
+            saturation: compact.x[0],
+            phaser: compact.x[1],
+            reverb: compact.x[2],
+            compThreshold: compact.x[3],
+            compRatio: compact.x[4],
+            compAttack: compact.x[5],
+            compMix: compact.x[6],
+          },
     solo: compact.s === 1,
     mute: compact.m === 1,
   };
@@ -518,7 +565,7 @@ function decodeCompactDocument(data: unknown): PresetDocument {
   if (!isRecord(data)) {
     throw new InvalidFileError("Shared preset payload must be an object");
   }
-  if (data.v !== COMPACT_CODEC_VERSION) {
+  if (data.v !== 3 && data.v !== COMPACT_CODEC_VERSION) {
     throw new UnsupportedVersionError(data.v);
   }
 

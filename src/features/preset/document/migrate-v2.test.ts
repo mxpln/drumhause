@@ -53,7 +53,7 @@ describe("migrateV2ToDocument", () => {
   it("converts every channel and master filter position to canonical", () => {
     const document = migrateV2ToDocument(buildV2Document());
 
-    expect(document.version).toBe(2.1);
+    expect(document.version).toBe(2.2);
     document.channels.forEach((channel, index) => {
       expect(channel.filter).toEqual(
         frozenSplitFilterPositionToCanonical(CHANNEL_FILTER_POSITIONS[index]),
@@ -92,7 +92,7 @@ describe("migrateV2ToDocument", () => {
     const document: PresetDocument = decodePresetFileText(
       JSON.stringify(buildV2Document()),
     );
-    expect(document.version).toBe(2.1);
+    expect(document.version).toBe(2.2);
     expect(document.master.filter).toEqual(
       frozenSplitFilterPositionToCanonical(MASTER_FILTER_POSITION),
     );

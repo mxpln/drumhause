@@ -242,7 +242,7 @@ describe("share codec round-trips within its canonical quantization", () => {
 
   it("encodes the stable kit id and the current codec version", () => {
     const compact = validPayload();
-    expect(compact.v).toBe(3);
+    expect(compact.v).toBe(4);
     expect(compact.v).toBe(COMPACT_CODEC_VERSION);
     expect(compact.k).toBe("kit-3");
   });

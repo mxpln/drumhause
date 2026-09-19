@@ -11,13 +11,14 @@
  *   marks the #269 swing retune.
  * - 2: the first domain document; every field domain-space EXCEPT the split
  *   filter, which was still persisted as its 0-100 position.
- * - 2.1 (this version): a refinement of the v2 domain document - the split
+ * - 2.1: a refinement of the v2 domain document - the split
  *   filter becomes canonical `{ side, cutoffHz }`
  *   (docs/data-representation.md, Principle P2); every other field is
  *   unchanged. The fractional minor signals "refinement, not a new
  *   generation", mirroring the #269 swing retune's `.dh` v1.5. Version-2
  *   documents in the wild migrate on read via migrate-v2.ts (position ->
  *   canonical, frozen curve).
+ * - 2.2 (this version): adds independent per-track FX/compressor state.
  */
 
 import { z } from "zod";
@@ -44,6 +45,10 @@ import {
 } from "@/core/audio/engine/pattern-types";
 import { SPLIT_FILTER_MAX_CUTOFF_HZ } from "./frozen-split-filter";
 import { collectStrippedKeyPaths, type StrippedSection } from "./stripped-keys";
+import {
+  DEFAULT_INSTRUMENT_EFFECTS,
+  type InstrumentEffects,
+} from "@/features/instrument/types/instrument";
 
 const PRESET_DOCUMENT_KIND = "drumhaus.preset";
 /**
@@ -53,7 +58,7 @@ const PRESET_DOCUMENT_KIND = "drumhaus.preset";
  * Everything that dispatches on this value must treat versions as
  * fractional, never integer-only.
  */
-const PRESET_DOCUMENT_VERSION = 2.1;
+const PRESET_DOCUMENT_VERSION = 2.2;
 
 const CHANNEL_COUNT = 8;
 
@@ -146,6 +151,27 @@ const channelSchema = z.object({
     .number()
     .min(-INSTRUMENT_TUNE_SEMITONE_RANGE)
     .max(INSTRUMENT_TUNE_SEMITONE_RANGE),
+  effects: z
+    .object({
+      saturation: z.number().min(0).max(1),
+      phaser: z.number().min(0).max(1),
+      reverb: z.number().min(0).max(1),
+      compThreshold: z
+        .number()
+        .min(MASTER_COMP_THRESHOLD_RANGE[0])
+        .max(MASTER_COMP_THRESHOLD_RANGE[1]),
+      compRatio: z
+        .number()
+        .int()
+        .min(MASTER_COMP_RATIO_RANGE[0])
+        .max(MASTER_COMP_RATIO_RANGE[1]),
+      compAttack: z
+        .number()
+        .min(MASTER_COMP_ATTACK_RANGE[0])
+        .max(MASTER_COMP_ATTACK_RANGE[1]),
+      compMix: z.number().min(0).max(1),
+    })
+    .default(() => ({ ...DEFAULT_INSTRUMENT_EFFECTS })),
   mute: z.boolean(),
   solo: z.boolean(),
 });
@@ -234,7 +260,29 @@ const presetDocumentSchema = z.object({
   master: masterSchema,
 });
 
-type PresetDocument = z.infer<typeof presetDocumentSchema>;
+type PresetDocumentChannel = Omit<
+  z.infer<typeof channelSchema>,
+  "effects"
+> & {
+  effects?: InstrumentEffects;
+};
+
+type PresetDocument = Omit<
+  z.infer<typeof presetDocumentSchema>,
+  "channels" | "version"
+> & {
+  version: 2.1 | typeof PRESET_DOCUMENT_VERSION;
+  channels: [
+    PresetDocumentChannel,
+    PresetDocumentChannel,
+    PresetDocumentChannel,
+    PresetDocumentChannel,
+    PresetDocumentChannel,
+    PresetDocumentChannel,
+    PresetDocumentChannel,
+    PresetDocumentChannel,
+  ];
+};
 
 /**
  * The key paths a strict presetDocumentSchema parse silently strips from a raw

@@ -76,4 +76,30 @@ describe("compact filter round-trip", () => {
     (compact.mc as { f: unknown }).f = [2, 5000]; // invalid side code
     expect(() => decodeCompactDocument(compact)).toThrow(CorruptFieldError);
   });
+
+  it("round-trips per-track FX and rejects malformed FX payloads", () => {
+    const document = baseDocument();
+    const effects = {
+      saturation: 0.4,
+      phaser: 0.25,
+      reverb: 0.75,
+      compThreshold: -18,
+      compRatio: 6,
+      compAttack: 0.02,
+      compMix: 0.55,
+    };
+    const withEffects: PresetDocument = {
+      ...document,
+      channels: document.channels.map((channel, index) =>
+        index === 0 ? { ...channel, effects } : channel,
+      ) as PresetDocument["channels"],
+    };
+
+    const compact = encodeCompactDocument(withEffects);
+    expect(compact.ip[0].x).toEqual(Object.values(effects));
+    expect(decodeCompactDocument(compact).channels[0].effects).toEqual(effects);
+
+    (compact.ip[0] as { x: unknown }).x = [0.2];
+    expect(() => decodeCompactDocument(compact)).toThrow(CorruptFieldError);
+  });
 });

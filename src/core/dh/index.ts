@@ -1,4 +1,5 @@
 import {
+  PRESET_DOCUMENT_VERSION,
   presetDocumentSchema,
   type PresetDocument,
 } from "@/features/preset/document";
@@ -24,7 +25,10 @@ import welcomeToTheHausJson from "./defaults/Welcome to the Haus.dh";
  * later call to the same loader.
  */
 const loadDefault = (json: unknown): PresetDocument =>
-  presetDocumentSchema.parse(structuredClone(json));
+  presetDocumentSchema.parse({
+    ...(structuredClone(json) as Record<string, unknown>),
+    version: PRESET_DOCUMENT_VERSION,
+  });
 
 const aDrumCalledHaus = (): PresetDocument => loadDefault(aDrumCalledHausJson);
 const amsterdam = (): PresetDocument => loadDefault(amsterdamJson);

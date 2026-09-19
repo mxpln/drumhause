@@ -36,6 +36,18 @@ interface ContinuousRuntimeParams {
   volume: number;
 }
 
+interface TrackFxRuntimeParams {
+  saturationWet: number;
+  saturationAmount: number;
+  phaserWet: number;
+  reverbWet: number;
+  reverbDecay: number;
+  compThreshold: number;
+  compRatio: number;
+  compAttack: number;
+  compMix: number;
+}
+
 /**
  * Per-note parameters read by the scheduler on every trigger.
  * Pushed into the engine in domain units; retained per channel so live
@@ -50,4 +62,9 @@ interface ChannelPlayParams {
   solo: boolean;
 }
 
-export type { InstrumentRole, ContinuousRuntimeParams, ChannelPlayParams };
+export type {
+  InstrumentRole,
+  ContinuousRuntimeParams,
+  TrackFxRuntimeParams,
+  ChannelPlayParams,
+};

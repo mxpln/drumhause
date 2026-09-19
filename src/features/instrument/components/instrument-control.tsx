@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { useChannelReady } from "@/core/audio/bridge/use-kit-version";
 import { isSameAsSource } from "@/features/sequencer/lib/clipboard";
 import { usePatternStore } from "@/features/sequencer/store/use-pattern-store";
@@ -8,6 +10,7 @@ import {
 import { cn } from "@/shared/lib/utils";
 import { useInstrumentsStore } from "../store/use-instruments-store";
 import { InstrumentHeader } from "./instrument-header";
+import { InstrumentFxPanel } from "./instrument-fx-panel";
 import { InstrumentParamsControl } from "./instrument-params-control";
 
 type InstrumentControlParams = {
@@ -21,6 +24,7 @@ function InstrumentControl({
   color = "currentColor",
   waveformWidth,
 }: InstrumentControlParams) {
+  const [isFxExpanded, setIsFxExpanded] = useState(false);
   const instrumentMeta = useInstrumentsStore(
     (state) => state.instruments[index].meta,
   );
@@ -87,6 +91,17 @@ function InstrumentControl({
           waveformWidth={waveformWidth}
         />
       </div>
+
+      <button
+        type="button"
+        className="mb-2 text-center font-pixel text-[10px] text-muted-foreground"
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={() => setIsFxExpanded((expanded) => !expanded)}
+      >
+        {isFxExpanded ? "hide FX" : "FX"}
+      </button>
+
+      {isFxExpanded && <InstrumentFxPanel index={index} />}
 
       <div className="mb-2">
         <InstrumentParamsControl index={index} />

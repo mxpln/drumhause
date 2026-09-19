@@ -13,10 +13,14 @@ import { shallow } from "zustand/shallow";
 import type { CanonicalFilter } from "@/core/audio/canonical/filter";
 import type { AudioEngine } from "@/core/audio/engine/audio-engine";
 import { useInstrumentsStore } from "@/features/instrument/store/use-instruments-store";
-import type { InstrumentParams } from "@/features/instrument/types/instrument";
+import {
+  DEFAULT_INSTRUMENT_EFFECTS,
+  type InstrumentParams,
+} from "@/features/instrument/types/instrument";
 import {
   instrumentContinuousParams,
   instrumentPlayParams,
+  instrumentTrackFxParams,
 } from "./engine-params";
 
 /** Canonical values used to detect changes; the push maps them to the engine. */
@@ -34,6 +38,8 @@ interface PlayChangeKey {
   solo: boolean;
 }
 
+type TrackFxChangeKey = NonNullable<InstrumentParams["effects"]>;
+
 /**
  * Subscribes the engine to instrument params from the store, pushing the
  * current state immediately and again on every change. Per-channel diffing
@@ -43,6 +49,7 @@ interface PlayChangeKey {
 function subscribeInstrumentParamsToEngine(engine: AudioEngine): () => void {
   const prevContinuous: (ContinuousChangeKey | undefined)[] = [];
   const prevPlay: (PlayChangeKey | undefined)[] = [];
+  const prevTrackFx: (TrackFxChangeKey | undefined)[] = [];
 
   const pushIfChanged = (index: number, params: InstrumentParams) => {
     const continuous: ContinuousChangeKey = {
@@ -67,6 +74,12 @@ function subscribeInstrumentParamsToEngine(engine: AudioEngine): () => void {
     if (!shallow(prevPlay[index], play)) {
       engine.setChannelPlayParams(index, instrumentPlayParams(params));
       prevPlay[index] = play;
+    }
+
+    const effects = params.effects ?? DEFAULT_INSTRUMENT_EFFECTS;
+    if (!shallow(prevTrackFx[index], effects)) {
+      engine.setChannelTrackFxParams(index, instrumentTrackFxParams(params));
+      prevTrackFx[index] = effects;
     }
   };
 

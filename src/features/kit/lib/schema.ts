@@ -6,6 +6,7 @@ import {
   INSTRUMENT_TUNE_SEMITONE_RANGE,
   INSTRUMENT_VOLUME_RANGE,
 } from "@/core/audio/engine/constants";
+import { DEFAULT_INSTRUMENT_EFFECTS } from "@/features/instrument/types/instrument";
 import type { KitFile } from "@/features/kit/types/kit";
 import { AttributionStatus } from "@/features/kit/types/sample";
 import { canonicalFilterSchema } from "@/features/preset/document/document";
@@ -70,6 +71,17 @@ const instrumentParamsSchema = z.object({
     .number()
     .min(-INSTRUMENT_TUNE_SEMITONE_RANGE)
     .max(INSTRUMENT_TUNE_SEMITONE_RANGE),
+  effects: z
+    .object({
+      saturation: z.number().min(0).max(1),
+      phaser: z.number().min(0).max(1),
+      reverb: z.number().min(0).max(1),
+      compThreshold: z.number().min(-40).max(0),
+      compRatio: z.number().int().min(1).max(8),
+      compAttack: z.number().min(0.001).max(0.1),
+      compMix: z.number().min(0).max(1),
+    })
+    .default(() => ({ ...DEFAULT_INSTRUMENT_EFFECTS })),
   solo: z.boolean(),
   mute: z.boolean(),
 });

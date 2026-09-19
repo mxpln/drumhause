@@ -13,6 +13,26 @@ import type { InstrumentRole } from "@/core/audio/engine/instrument/types";
 import { SampleData } from "@/features/kit/types/sample";
 import { InlineMeta } from "@/features/preset/types/meta";
 
+interface InstrumentEffects {
+  saturation: number;
+  phaser: number;
+  reverb: number;
+  compThreshold: number;
+  compRatio: number;
+  compAttack: number;
+  compMix: number;
+}
+
+const DEFAULT_INSTRUMENT_EFFECTS: InstrumentEffects = {
+  saturation: 0,
+  phaser: 0,
+  reverb: 0,
+  compThreshold: 0,
+  compRatio: 5,
+  compAttack: 0.025750000000000002,
+  compMix: 0,
+};
+
 interface InstrumentParams {
   /** Envelope decay time, seconds. */
   decay: number;
@@ -24,6 +44,7 @@ interface InstrumentParams {
   pan: number;
   /** Pitch offset in semitones. */
   tune: number;
+  effects?: InstrumentEffects;
   solo: boolean;
   mute: boolean;
 }
@@ -35,4 +56,9 @@ interface InstrumentData {
   params: InstrumentParams;
 }
 
-export type { InstrumentData, InstrumentParams };
+export {
+  DEFAULT_INSTRUMENT_EFFECTS,
+  type InstrumentData,
+  type InstrumentEffects,
+  type InstrumentParams,
+};

@@ -131,7 +131,7 @@ describe("document corpus (v2 -> v2.1)", () => {
 
     // Envelope: the version-2 domain document migrates to the current 2.1.
     expect(document.kind).toBe("drumhaus.preset");
-    expect(document.version).toBe(2.1);
+    expect(document.version).toBe(2.2);
     expect(document.meta.id).toBe("cf0a9d3b-841d-4eeb-9a54-0003afa037b3");
     expect(document.meta.name).toBe("Super Dream Haus");
     expect(document.kit.id).toBe("kit-11");
@@ -178,7 +178,7 @@ describe("document corpus (v2 -> v2.1)", () => {
     const captured = decodePresetObject(
       JSON.parse(readFixture("v2_1-super-dream-haus.json")),
     );
-    expect(captured.version).toBe(2.1);
+    expect(captured.version).toBe(2.2);
     expect(captured.master.filter.side).toBe(EXPECTED_MASTER_FILTER.side);
     expect(captured.master.filter.cutoffHz).toBeCloseTo(
       EXPECTED_MASTER_FILTER.cutoffHz,

@@ -27,7 +27,7 @@ describe("decodePresetFileText - current-version strip warning", () => {
 
   it("loads a clean v2.1 document without warning", () => {
     const document = decodePresetFileText(JSON.stringify(validDocument()));
-    expect(document.version).toBe(2.1);
+    expect(document.version).toBe(2.2);
     expect(warnSpy).not.toHaveBeenCalled();
   });
 
@@ -36,7 +36,7 @@ describe("decodePresetFileText - current-version strip warning", () => {
 
     const document = decodePresetFileText(JSON.stringify(raw));
 
-    expect(document.version).toBe(2.1);
+    expect(document.version).toBe(2.2);
     expect("futureField" in document).toBe(false);
     expect(warnSpy).toHaveBeenCalledTimes(1);
     expect(String(warnSpy.mock.calls[0][0])).toContain("futureField");
