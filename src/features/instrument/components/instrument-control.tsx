@@ -9,8 +9,8 @@ import {
 } from "@/shared/lib/interactable-highlight";
 import { cn } from "@/shared/lib/utils";
 import { useInstrumentsStore } from "../store/use-instruments-store";
-import { InstrumentHeader } from "./instrument-header";
 import { InstrumentFxPanel } from "./instrument-fx-panel";
+import { InstrumentHeader } from "./instrument-header";
 import { InstrumentParamsControl } from "./instrument-params-control";
 
 type InstrumentControlParams = {
@@ -72,7 +72,7 @@ function InstrumentControl({
       data-instrument-index={index}
       data-selected={showSelectedState || undefined}
       className={cn(
-        "group flex h-full w-full flex-col rounded-2xl border border-transparent",
+        "group relative flex h-full w-full flex-col overflow-visible rounded-2xl border border-transparent",
         {
           "cursor-pointer": isChannelReady,
           "cursor-default": !isChannelReady,
@@ -94,15 +94,30 @@ function InstrumentControl({
 
       <button
         type="button"
-        className="mb-2 text-center font-pixel text-[10px] text-muted-foreground"
+        aria-controls={`instrument-fx-panel-${index}`}
+        aria-expanded={isFxExpanded}
+        className={cn(
+          "focus-ring font-pixel mx-1 mb-2 min-h-7 rounded-md border px-2 text-center text-[10px] transition-colors",
+          isFxExpanded
+            ? "border-primary/60 bg-primary/15 text-foreground-emphasis"
+            : "border-border/70 bg-surface/60 text-foreground-emphasis hover:border-primary/50 hover:bg-primary/10",
+        )}
         onPointerDown={(event) => event.stopPropagation()}
         onClick={() => setIsFxExpanded((expanded) => !expanded)}
       >
-        {isFxExpanded ? "hide FX" : "FX"}
+        {isFxExpanded ? "Hide FX" : "FX"}
       </button>
 
-      {isFxExpanded && <InstrumentFxPanel index={index} />}
-
+      {isFxExpanded && (
+        <div
+          className={cn(
+            "absolute top-full z-30 mt-1",
+            index >= 6 ? "right-0" : "left-0",
+          )}
+        >
+          <InstrumentFxPanel index={index} />
+        </div>
+      )}
       <div className="mb-2">
         <InstrumentParamsControl index={index} />
       </div>
