@@ -30,7 +30,7 @@ describe("frozen v3 share payloads", () => {
   it("share-v3-init.txt decodes to the pinned init document", () => {
     const document = urlToDocument(readPayload("share-v3-init.txt"));
 
-    expect(document.version).toBe(2.1);
+    expect(document.version).toBe(2.2);
     expect(document.kit.id).toBe("kit-0");
     expect(document.meta.name).toBe("init");
     expect(document.transport).toEqual({ bpm: 100, swing: 0 });
@@ -59,7 +59,7 @@ describe("frozen v3 share payloads", () => {
   it("share-v3-dense.txt decodes to the pinned dense document", () => {
     const document = urlToDocument(readPayload("share-v3-dense.txt"));
 
-    expect(document.version).toBe(2.1);
+    expect(document.version).toBe(2.2);
     expect(document.kit.id).toBe("kit-3");
     expect(document.meta.name).toBe("Dense Fixture");
     expect(document.transport.bpm).toBe(137);

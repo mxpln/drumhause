@@ -16,7 +16,10 @@
  */
 
 import { useInstrumentsStore } from "@/features/instrument/store/use-instruments-store";
-import type { InstrumentParams } from "@/features/instrument/types/instrument";
+import {
+  DEFAULT_INSTRUMENT_EFFECTS,
+  type InstrumentParams,
+} from "@/features/instrument/types/instrument";
 import { getMasterChainParams } from "@/features/master-bus/store/use-master-chain-store";
 import type { Meta } from "@/features/preset/types/meta";
 import { usePatternStore } from "@/features/sequencer/store/use-pattern-store";
@@ -40,6 +43,7 @@ function channelFromParams(params: InstrumentParams) {
     volumeDb: volumeToDb(params.volume),
     pan: params.pan,
     tuneSemitones: params.tune,
+    effects: params.effects ?? DEFAULT_INSTRUMENT_EFFECTS,
     mute: params.mute,
     solo: params.solo,
   };

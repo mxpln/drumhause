@@ -186,7 +186,11 @@ describe("golden corpus", () => {
     "%s migrates to the pinned document surface",
     (name) => {
       const { pattern: _pattern, ...surface } = migrateFixture(name);
-      expect(surface).toEqual(GOLDEN_SURFACES[name]);
+      expect(surface.channels.every((channel) => channel.effects)).toBe(true);
+      expect({
+        ...surface,
+        channels: surface.channels.map(({ effects: _effects, ...channel }) => channel),
+      }).toEqual(GOLDEN_SURFACES[name]);
     },
   );
 
@@ -198,7 +202,7 @@ describe("golden corpus", () => {
   it("v1-current spot values", () => {
     const document = migrateFixture("v1-current.json");
     expect(document.kind).toBe("drumhaus.preset");
-    expect(document.version).toBe(2.1);
+    expect(document.version).toBe(2.2);
     expect(document.meta.id).toBe("53b9eebd-6af5-43ed-b43e-eec354dbc4cc");
     expect(document.meta.name).toBe("init");
     expect(document.kit.id).toBe("kit-0");

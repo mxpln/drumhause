@@ -14,9 +14,13 @@ import {
 import { isReadablePresetFileVersion } from "./legacy-file-version";
 import { migrateV1ToDocument } from "./migrate-v1";
 import { migrateV2ToDocument } from "./migrate-v2";
+import { migrateV21ToDocument } from "./migrate-v2.1";
 import { validatePresetFileV1 } from "./parse";
 import { warnStrippedKeyPaths } from "./stripped-keys";
-import { READABLE_DOCUMENT_VERSION_V2 } from "./versions";
+import {
+  READABLE_DOCUMENT_VERSION_V2,
+  READABLE_DOCUMENT_VERSION_V2_1,
+} from "./versions";
 
 /**
  * Decode raw `.dh` file text into the current (v2.1) preset document.
@@ -77,6 +81,10 @@ function decodePresetObject(data: unknown): PresetDocument {
 
   if (raw.version === READABLE_DOCUMENT_VERSION_V2) {
     return migrateV2ToDocument(raw);
+  }
+
+  if (raw.version === READABLE_DOCUMENT_VERSION_V2_1) {
+    return migrateV21ToDocument(raw);
   }
 
   if (raw.version === PRESET_DOCUMENT_VERSION) {

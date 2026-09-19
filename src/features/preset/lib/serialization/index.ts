@@ -81,9 +81,9 @@ function urlToDocument(urlParam: string): PresetDocument {
 
   const version = (data as Record<string, unknown>).v;
 
-  // Latest-only: only the single current codec version decodes. Everything
-  // else - older v1.5 links and versionless pre-#269 links - is refused here.
-  if (version !== COMPACT_CODEC_VERSION) {
+  // v3 predates per-track FX and decodes with neutral FX defaults. Older
+  // knob-space links and versionless pre-#269 links remain unsupported.
+  if (version !== 3 && version !== COMPACT_CODEC_VERSION) {
     throw new UnsupportedVersionError(version);
   }
 

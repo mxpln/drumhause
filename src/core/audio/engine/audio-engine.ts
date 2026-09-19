@@ -47,6 +47,7 @@ import {
 import type {
   ChannelPlayParams,
   ContinuousRuntimeParams,
+  TrackFxRuntimeParams,
   InstrumentRole,
 } from "./instrument/types";
 import { MasterBus, MasterChainSettings } from "./master-bus";
@@ -235,6 +236,7 @@ class AudioEngine {
   /** Raw chain reference from the last push, for identity change detection. */
   private lastPushedChain: PatternChain | null = null;
   private continuousParams: (ContinuousRuntimeParams | undefined)[] = [];
+  private trackFxParams: (TrackFxRuntimeParams | undefined)[] = [];
   private playParams: (ChannelPlayParams | undefined)[] = [];
   /** Cached "any channel soloed" flag, kept fresh at push points so the
    * per-step scheduling context never scans playParams. */
@@ -416,6 +418,7 @@ class AudioEngine {
       this.roles = kit.map((slot) => slot.role);
       this.ohatIndex = this.roles.indexOf("ohat");
       this.continuousParams.length = kit.length;
+      this.trackFxParams.length = kit.length;
       this.playParams.length = kit.length;
       // Truncating playParams may have dropped a soloed slot.
       this.anySolos = this.hasAnySolo();
@@ -432,6 +435,7 @@ class AudioEngine {
         this.channels,
         this.masterBus,
         this.continuousParams,
+        this.trackFxParams,
         this.meters,
       );
 
@@ -481,6 +485,7 @@ class AudioEngine {
     const playback = this.playback;
     let playParams = this.playParams.slice();
     const continuousParams = this.continuousParams.slice();
+    const trackFxParams = this.trackFxParams.slice();
     const bpm = this.bpm;
     const swing = this.swing;
 
@@ -545,9 +550,9 @@ class AudioEngine {
         const channels = await createKitChannels(kit, resolver);
         if (masterSettings) {
           const bus = await MasterBus.create(masterSettings, destination);
-          attachChannels(channels, bus, continuousParams);
+          attachChannels(channels, bus, continuousParams, trackFxParams);
         } else {
-          attachChannels(channels, null, continuousParams);
+          attachChannels(channels, null, continuousParams, trackFxParams);
           channels.forEach((channel) => channel.connectToNode(destination));
         }
 
@@ -723,6 +728,12 @@ class AudioEngine {
   ): void {
     this.continuousParams[index] = params;
     this.channels[index]?.applyContinuousParams(params);
+  }
+
+  /** Pushes track-local FX settings retained across kit loads and exports. */
+  setChannelTrackFxParams(index: number, params: TrackFxRuntimeParams): void {
+    this.trackFxParams[index] = params;
+    this.channels[index]?.applyTrackFxParams(params);
   }
 
   /**
@@ -1153,12 +1164,15 @@ function attachChannels(
   channels: InstrumentChannel[],
   bus: MasterBus | null,
   continuousParams: (ContinuousRuntimeParams | undefined)[],
+  trackFxParams: (TrackFxRuntimeParams | undefined)[],
   meters?: (Meter | null)[],
 ): void {
   channels.forEach((channel, index) => {
     if (bus) channel.connectToMasterBus(bus);
     const continuous = continuousParams[index];
     if (continuous) channel.applyContinuousParams(continuous);
+    const trackFx = trackFxParams[index];
+    if (trackFx) channel.applyTrackFxParams(trackFx);
     const meter = meters?.[index];
     if (meter) channel.output.connect(meter);
   });

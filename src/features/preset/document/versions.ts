@@ -31,9 +31,11 @@ const PRESET_FILE_VERSION = 1.5;
  * position. Read-only; migrated to the canonical v2.1 on read.
  */
 const READABLE_DOCUMENT_VERSION_V2 = 2;
+const READABLE_DOCUMENT_VERSION_V2_1 = 2.1;
 
 export {
   PRESET_FILE_VERSION,
   READABLE_DOCUMENT_VERSION_V2,
+  READABLE_DOCUMENT_VERSION_V2_1,
   READABLE_V1_FILE_VERSIONS,
 };

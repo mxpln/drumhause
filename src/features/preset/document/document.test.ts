@@ -52,7 +52,7 @@ function makeChannel(): PresetDocument["channels"][number] {
 
 const validDocument: PresetDocument = {
   kind: "drumhaus.preset",
-  version: 2.1,
+  version: 2.2,
   meta: {
     id: "preset-test",
     name: "Test Preset",

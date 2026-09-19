@@ -51,7 +51,7 @@ describe("encode/decode round trip", () => {
     const text = encodePresetDocument(migrateFixture(name));
     const raw = JSON.parse(text) as Record<string, unknown>;
     expect(raw.kind).toBe("drumhaus.preset");
-    expect(raw.version).toBe(2.1);
+    expect(raw.version).toBe(2.2);
   });
 
   it("pretty-prints with 2-space indentation", () => {
