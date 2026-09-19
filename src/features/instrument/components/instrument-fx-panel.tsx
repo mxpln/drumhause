@@ -1,5 +1,4 @@
 import { RotaryKnob } from "@/design/param-control";
-
 import { useInstrumentsStore } from "@/features/instrument/store/use-instruments-store";
 import { DEFAULT_INSTRUMENT_EFFECTS } from "@/features/instrument/types/instrument";
 import { historyGestureHandlers } from "@/features/preset/history/history";
@@ -30,7 +29,12 @@ function InstrumentFxPanel({ index }: InstrumentFxPanelProps) {
   };
 
   return (
-    <div className="grid grid-cols-4 gap-2 border-t pt-2">
+    <div
+      id={`instrument-fx-panel-${index}`}
+      aria-label="Track effects"
+      className="surface-raised border-primary/30 grid w-44 grid-cols-2 gap-x-1 gap-y-0.5 rounded-xl border p-2 shadow-(--shadow-neu-md)"
+      onPointerDown={(event) => event.stopPropagation()}
+    >
       <RotaryKnob
         {...historyGestureHandlers}
         label="sat"
